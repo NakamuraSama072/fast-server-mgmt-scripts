@@ -73,9 +73,37 @@ update_system() {
 }
 
 # Install and refresh EPEL metadata as required for RHEL-family systems.
+# This function includes a fallback mechanism to directly install the EPEL release RPM if the package is not found in current repositories,
+# which is also the idea from GPT-5.2.
 install_epel() {
   log "Installing and enabling EPEL repository..."
-  ${PKG_MGR} -y install epel-release
+  if ${PKG_MGR} -y install epel-release; then
+    ${PKG_MGR} -y makecache
+    return
+  fi
+
+  warn "Package 'epel-release' was not found in current repositories."
+
+  if [[ ! -f /etc/os-release ]]; then
+    fail "Cannot detect OS version for EPEL fallback installation."
+  fi
+
+  # shellcheck disable=SC1091
+  source /etc/os-release
+  local major_version
+  major_version="${VERSION_ID%%.*}"
+
+  if [[ -z "${major_version}" ]]; then
+    fail "Cannot parse major version from VERSION_ID='${VERSION_ID:-unknown}'."
+    fail "Initialization terminated with errors."
+    exit 1
+  fi
+
+  local epel_rpm_url
+  epel_rpm_url="https://dl.fedoraproject.org/pub/epel/epel-release-latest-${major_version}.noarch.rpm"
+
+  log "Trying EPEL fallback RPM: ${epel_rpm_url}"
+  ${PKG_MGR} -y install "${epel_rpm_url}"
   ${PKG_MGR} -y makecache
 }
 

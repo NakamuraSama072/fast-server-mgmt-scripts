@@ -42,6 +42,9 @@ Distribution-specific behavior:
 
 ## Usage
 
+> [!TIP]
+> You might need to install `sudo` and configure Internet connections first on some distributions.
+
 ### Option A: Run from a local clone
 
 First, clone the repository:
