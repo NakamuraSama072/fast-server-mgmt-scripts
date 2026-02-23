@@ -18,7 +18,7 @@ This repository currently provides two distribution-specific server initializati
 Both scripts are designed for first-pass server bootstrap and include:
 
 - System update at the beginning of execution
-- OpenSSH server installation and service enablement
+- OpenSSH server installation and service enablement (completed with the help of GPT-5.2)
 - Common baseline package installation
 - Firewall setup for SSH (22), HTTP (80), and HTTPS (443)
 

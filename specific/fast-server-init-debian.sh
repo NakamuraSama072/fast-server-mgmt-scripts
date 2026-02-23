@@ -96,13 +96,65 @@ install_base_packages() {
 }
 
 # Ensure SSH service is enabled and started.
+# This function is completed by GPT-5.2 but tested on Debian 12+ and Ubuntu 22.04+.
 configure_ssh() {
   log "Enabling and starting SSH service..."
-  if systemctl list-unit-files | grep -q '^ssh\.service'; then
+  if systemctl list-unit-files --type=service | awk '{print $1}' | grep -qx 'ssh.service'; then
     systemctl enable --now ssh
-  else
-    systemctl enable --now sshd
+    return
   fi
+
+  if systemctl list-unit-files --type=service | awk '{print $1}' | grep -qx 'sshd.service'; then
+    systemctl start sshd
+
+    local sshd_state
+    sshd_state="$(systemctl is-enabled sshd 2>/dev/null || true)"
+
+    if [[ "${sshd_state}" == "disabled" ]]; then
+      systemctl enable sshd
+    elif [[ "${sshd_state}" == "enabled" || "${sshd_state}" == "alias" ]]; then
+      log "sshd.service is already enabled (${sshd_state})."
+    else
+      warn "Skip enabling sshd.service due to unit state: ${sshd_state}."
+      warn "This is normal on some Debian releases where sshd.service is a linked/alias unit."
+    fi
+    return
+  fi
+
+  fail "Neither ssh.service nor sshd.service was found after installing openssh-server."
+}
+
+# Allow root login via SSH by editing /etc/ssh/sshd_config.
+# This function is completed by GPT-5.2 but tested on Debian 12+ and Ubuntu 22.04+.
+configure_sshd_root_login() {
+  local sshd_config="/etc/ssh/sshd_config"
+
+  if [[ ! -f "${sshd_config}" ]]; then
+    fail "${sshd_config} was not found."
+  fi
+
+  log "Updating ${sshd_config} to allow root SSH login..."
+  if grep -Eq '^[[:space:]]*#?[[:space:]]*PermitRootLogin[[:space:]]+' "${sshd_config}"; then
+    sed -i -E 's|^[[:space:]]*#?[[:space:]]*PermitRootLogin[[:space:]]+.*$|PermitRootLogin yes|' "${sshd_config}"
+  else
+    echo -e '\nPermitRootLogin yes\n' >> "${sshd_config}"
+  fi
+
+  if command -v sshd >/dev/null 2>&1; then
+    sshd -t
+  fi
+
+  if systemctl list-unit-files --type=service | awk '{print $1}' | grep -qx 'ssh.service'; then
+    systemctl reload ssh || systemctl restart ssh
+    return
+  fi
+
+  if systemctl list-unit-files --type=service | awk '{print $1}' | grep -qx 'sshd.service'; then
+    systemctl reload sshd || systemctl restart sshd
+    return
+  fi
+
+  warn "SSH service unit not found for reload. Please restart SSH service manually."
 }
 
 # Configure UFW with secure defaults and common web ports.
@@ -125,6 +177,7 @@ install_selinux_tools() {
 }
 
 # Check SELinux status and attempt activation when currently disabled.
+# This function is completed by GPT-5.2 but tested on Debian 12+ and Ubuntu 22.04+.
 check_and_enable_selinux() {
   if ! command -v getenforce >/dev/null 2>&1; then
     warn "SELinux tools are not available. Skipping SELinux status check."
@@ -173,6 +226,7 @@ main() {
   update_system
   install_base_packages
   configure_ssh
+  configure_sshd_root_login
   configure_ufw
   install_selinux_tools
   check_and_enable_selinux
