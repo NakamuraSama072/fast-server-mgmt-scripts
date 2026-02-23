@@ -19,20 +19,20 @@ The table below shows the testing status of the scripts on various distributions
 
 | Distribution | Test status |
 |---|---|
-| Debian 13 | ? Passed |
-| RHEL 10 | ? Passed |
-| AlmaLinux 10 | ? Passed |
-| Debian 12 | ?? Testing |
-| Ubuntu 24.04 | ?? Testing |
-| Ubuntu 22.04 | ?? Testing |
-| Rocky Linux 10 | ?? Testing |
-| AlmaLinux 9 | ? Not tested |
-| CentOS 10 Stream | ? Not tested |
-| CentOS 7 | ? Not tested |
-| Rocky Linux 9 | ? Not tested |
-| openSUSE Leap 16 | ? Not tested |
+| Debian 13 | ✅ Passed |
+| RHEL 10 | ✅ Passed |
+| AlmaLinux 10 | ✅ Passed |
+| Debian 12 | ⚠️ Testing |
+| Ubuntu 24.04 | ⚠️ Testing |
+| Ubuntu 22.04 | ⚠️ Testing |
+| Rocky Linux 10 | ⚠️ Testing |
+| AlmaLinux 9 | ❌ Not tested |
+| CentOS 10 Stream | ❌ Not tested |
+| CentOS 7 | ❌ Not tested |
+| Rocky Linux 9 | ❌ Not tested |
+| openSUSE Leap 16 | ❌ Not tested |
 
-Status key: ? = Passed testing; ?? = Testing in progress or tested with compatibility issues; ? = Not tested
+Status key: ✅ = Passed testing; ⚠️ = Testing in progress or tested with compatibility issues; ❌ = Not tested
 
 ## What These Scripts Do
 
