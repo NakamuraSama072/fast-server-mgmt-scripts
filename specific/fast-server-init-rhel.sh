@@ -86,6 +86,8 @@ install_epel() {
 
   if [[ ! -f /etc/os-release ]]; then
     fail "Cannot detect OS version for EPEL fallback installation."
+    fail "Initialization terminated with errors."
+    exit 1
   fi
 
   # shellcheck disable=SC1091
