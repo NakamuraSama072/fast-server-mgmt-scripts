@@ -2,8 +2,13 @@
 
 set -euo pipefail
 
+# Basic log helpers.
 log() {
   echo "[INFO] $1"
+}
+
+note() {
+  echo "[NOTE] $1"
 }
 
 warn() {
@@ -15,25 +20,36 @@ fail() {
   exit 1
 }
 
+# Require sudo/root execution.
 require_root() {
   if [[ "${EUID}" -ne 0 ]]; then
     fail "This script must be run with sudo (example: sudo bash fast-server-init-rhel.sh)."
+    fail "Initialization terminated with errors."
+    exit 1
   fi
 }
 
+# Prefer newer package manager first: dnf -> yum.
 detect_package_manager() {
   if command -v dnf >/dev/null 2>&1; then
+    log "'dnf' detected. It will be used as the package manager."
     PKG_MGR="dnf"
   elif command -v yum >/dev/null 2>&1; then
+    log "'yum' detected instead. Note that 'yum' is older and may have different behavior compared to 'dnf'."
     PKG_MGR="yum"
   else
     fail "Neither dnf nor yum was found on this system."
+    fail "Initialization terminated with errors."
+    exit 1
   fi
 }
 
+# Validate OS family before running CentOS/RHEL-specific operations.
 ensure_rhel_family() {
   if [[ ! -f /etc/os-release ]]; then
     fail "Cannot detect OS: /etc/os-release was not found."
+    fail "Initialization terminated with errors."
+    exit 1
   fi
 
   # shellcheck disable=SC1091
@@ -43,20 +59,27 @@ ensure_rhel_family() {
 
   if [[ "${os_id}" != "rhel" && "${os_id}" != "centos" && "${os_id}" != "rocky" && "${os_id}" != "almalinux" && "${os_like}" != *"rhel"* && "${os_like}" != *"fedora"* ]]; then
     fail "This script only supports CentOS/RHEL family systems. Detected: ${PRETTY_NAME:-unknown}."
+    note "If you are using Debian/Ubuntu, please run the Debian/Ubuntu-specific initialization script instead:"
+    note "curl https://raw.githubusercontent.com/nakamurasama072/fast-server-mgmt-scripts/main/specific/fast-server-init-debian.sh | sudo bash"
+    fail "Initialization terminated with errors."
+    exit 1
   fi
 }
 
+# Always update system before initialization tasks.
 update_system() {
   log "Updating system packages..."
   ${PKG_MGR} -y update
 }
 
+# Install and refresh EPEL metadata as required for RHEL-family systems.
 install_epel() {
   log "Installing and enabling EPEL repository..."
   ${PKG_MGR} -y install epel-release
   ${PKG_MGR} -y makecache
 }
 
+# Install baseline tools used in RHCSA-related setup workflows.
 install_base_packages() {
   log "Installing base packages..."
   ${PKG_MGR} -y install \
@@ -76,20 +99,25 @@ install_base_packages() {
     policycoreutils-python-utils
 }
 
+# Ensure SSH service is enabled and started.
 configure_ssh() {
   log "Enabling and starting SSH service..."
   systemctl enable --now sshd
 }
 
+# Configure firewalld with persistent rules for SSH/HTTP/HTTPS.
 configure_firewalld() {
   log "Configuring firewalld rules..."
   systemctl enable --now firewalld
-  firewall-cmd --permanent --add-service=ssh
-  firewall-cmd --permanent --add-service=http
-  firewall-cmd --permanent --add-service=https
+  # Using --add-service may not work on some instances, so
+  # we will add ports directly to ensure they are open.
+  firewall-cmd --permanent --add-port=22/tcp
+  firewall-cmd --permanent --add-port=80/tcp
+  firewall-cmd --permanent --add-port=443/tcp
   firewall-cmd --reload
 }
 
+# Report current SELinux mode and provide guidance when needed.
 check_selinux() {
   if command -v getenforce >/dev/null 2>&1; then
     local mode
@@ -103,6 +131,7 @@ check_selinux() {
   fi
 }
 
+# Main execution flow.
 main() {
   require_root
   ensure_rhel_family

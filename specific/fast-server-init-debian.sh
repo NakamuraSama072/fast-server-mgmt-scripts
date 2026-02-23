@@ -2,8 +2,13 @@
 
 set -euo pipefail
 
+# Basic log helpers.
 log() {
   echo "[INFO] $1"
+}
+
+note() {
+  echo "[NOTE] $1"
 }
 
 warn() {
@@ -15,25 +20,34 @@ fail() {
   exit 1
 }
 
+# Require sudo/root execution.
 require_root() {
   if [[ "${EUID}" -ne 0 ]]; then
     fail "This script must be run with sudo (example: sudo bash fast-server-init-debian.sh)."
   fi
 }
 
+# Prefer newer package manager first: apt -> apt-get.
 detect_package_manager() {
   if command -v apt >/dev/null 2>&1; then
+    log "'apt' detected. It will be used as the package manager."
     PKG_MGR="apt"
   elif command -v apt-get >/dev/null 2>&1; then
+    log "'apt-get' detected instead. Note that 'apt-get' is older and may have different behavior compared to 'apt'."
     PKG_MGR="apt-get"
   else
     fail "Neither apt nor apt-get was found on this system."
+    fail "Initialization terminated with errors."
+    exit 1
   fi
 }
 
+# Validate OS family before running Debian/Ubuntu-specific operations.
 ensure_debian_family() {
   if [[ ! -f /etc/os-release ]]; then
     fail "Cannot detect OS: /etc/os-release was not found."
+    fail "Initialization terminated with errors."
+    exit 1
   fi
 
   # shellcheck disable=SC1091
@@ -43,17 +57,27 @@ ensure_debian_family() {
 
   if [[ "${os_id}" != "debian" && "${os_id}" != "ubuntu" && "${os_like}" != *"debian"* ]]; then
     fail "This script only supports Debian/Ubuntu systems. Detected: ${PRETTY_NAME:-unknown}."
+    note "If you are using CentOS/RHEL, please run the CentOS/RHEL-specific initialization script instead:"
+    note "curl https://raw.githubusercontent.com/nakamurasama072/fast-server-mgmt-scripts/main/specific/fast-server-init-rhel.sh | sudo bash"
+    fail "Initialization terminated with errors."
+    exit 1
   fi
 }
 
+# Always update system before initialization tasks.
 update_system() {
-  log "Updating package index..."
+  log "Updating package index (This will not upgrade packages!)..."
   ${PKG_MGR} update
 
   log "Upgrading installed packages..."
-  DEBIAN_FRONTEND=noninteractive ${PKG_MGR} -y upgrade
+  DEBIAN_FRONTEND=noninteractive ${PKG_MGR} -y dist-upgrade
+
+  log "Removing unnecessary packages and cleaning up..."
+  DEBIAN_FRONTEND=noninteractive ${PKG_MGR} -y autoremove
+  DEBIAN_FRONTEND=noninteractive ${PKG_MGR} -y clean
 }
 
+# Install baseline tools used in RHCSA-related setup workflows.
 install_base_packages() {
   log "Installing base packages..."
   DEBIAN_FRONTEND=noninteractive ${PKG_MGR} -y install \
@@ -71,6 +95,7 @@ install_base_packages() {
     ca-certificates
 }
 
+# Ensure SSH service is enabled and started.
 configure_ssh() {
   log "Enabling and starting SSH service..."
   if systemctl list-unit-files | grep -q '^ssh\.service'; then
@@ -80,6 +105,7 @@ configure_ssh() {
   fi
 }
 
+# Configure UFW with secure defaults and common web ports.
 configure_ufw() {
   log "Configuring UFW firewall rules..."
   ufw default deny incoming
@@ -90,6 +116,7 @@ configure_ufw() {
   ufw --force enable
 }
 
+# Install SELinux userspace tools on Debian/Ubuntu.
 install_selinux_tools() {
   log "Installing SELinux tools (Debian/Ubuntu optional hardening)..."
   if ! DEBIAN_FRONTEND=noninteractive ${PKG_MGR} -y install selinux-utils selinux-basics selinux-policy-default; then
@@ -97,6 +124,7 @@ install_selinux_tools() {
   fi
 }
 
+# Check SELinux status and attempt activation when currently disabled.
 check_and_enable_selinux() {
   if ! command -v getenforce >/dev/null 2>&1; then
     warn "SELinux tools are not available. Skipping SELinux status check."
@@ -136,6 +164,7 @@ EOF
   fi
 }
 
+# Main execution flow.
 main() {
   require_root
   ensure_debian_family
