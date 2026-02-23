@@ -60,7 +60,7 @@ ensure_rhel_family() {
   if [[ "${os_id}" != "rhel" && "${os_id}" != "centos" && "${os_id}" != "rocky" && "${os_id}" != "almalinux" && "${os_like}" != *"rhel"* && "${os_like}" != *"fedora"* ]]; then
     fail "This script only supports CentOS/RHEL family systems. Detected: ${PRETTY_NAME:-unknown}."
     note "If you are using Debian/Ubuntu, please run the Debian/Ubuntu-specific initialization script instead:"
-    note "curl https://raw.githubusercontent.com/nakamurasama072/fast-server-mgmt-scripts/main/specific/fast-server-init-debian.sh | sudo bash"
+    note "curl -fsSL https://raw.githubusercontent.com/nakamurasama072/fast-server-mgmt-scripts/main/specific/fast-server-init-debian.sh | sudo bash"
     fail "Initialization terminated with errors."
     exit 1
   fi
