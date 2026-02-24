@@ -135,6 +135,29 @@ configure_ssh() {
   systemctl enable --now sshd
 }
 
+# Allow root login via SSH by editing /etc/ssh/sshd_config.
+# This function is completed by GPT-5.2 but tested on AlmaLinux 9+ and Rocky Linux 9+.
+configure_sshd_root_login() {
+  local sshd_config="/etc/ssh/sshd_config"
+
+  if [[ ! -f "${sshd_config}" ]]; then
+    fail "${sshd_config} was not found."
+  fi
+
+  log "Updating ${sshd_config} to allow root SSH login..."
+  if grep -Eq '^[[:space:]]*#?[[:space:]]*PermitRootLogin[[:space:]]+' "${sshd_config}"; then
+    sed -i -E 's|^[[:space:]]*#?[[:space:]]*PermitRootLogin[[:space:]]+.*$|PermitRootLogin yes|' "${sshd_config}"
+  else
+    echo -e '\nPermitRootLogin yes\n' >> "${sshd_config}"
+  fi
+
+  if command -v sshd >/dev/null 2>&1; then
+    sshd -t
+  fi
+
+  systemctl reload sshd || systemctl restart sshd
+}
+
 # Configure firewalld with persistent rules for SSH/HTTP/HTTPS.
 configure_firewalld() {
   log "Configuring firewalld rules..."
@@ -171,6 +194,7 @@ main() {
   install_epel
   install_base_packages
   configure_ssh
+  configure_sshd_root_login
   configure_firewalld
   check_selinux
 
