@@ -21,7 +21,7 @@ fail() {
 }
 
 # Require sudo/root execution.
-require_root() {
+check_root_permissions() {
   if [[ "${EUID}" -ne 0 ]]; then
     fail "This script must be run with sudo (example: sudo bash fast-server-init-debian.sh)."
   fi
@@ -36,18 +36,14 @@ detect_package_manager() {
     log "'apt-get' detected instead. Note that 'apt-get' is older and may have different behavior compared to 'apt'."
     PKG_MGR="apt-get"
   else
-    fail "Neither apt nor apt-get was found on this system."
-    fail "Initialization terminated with errors."
-    exit 1
+    fail "Neither apt nor apt-get was found on this system. Initialization terminated with errors."
   fi
 }
 
 # Validate OS family before running Debian/Ubuntu-specific operations.
 ensure_debian_family() {
   if [[ ! -f /etc/os-release ]]; then
-    fail "Cannot detect OS: /etc/os-release was not found."
-    fail "Initialization terminated with errors."
-    exit 1
+    fail "Cannot detect OS: /etc/os-release was not found. Initialization terminated with errors."
   fi
 
   # shellcheck disable=SC1091
@@ -56,11 +52,10 @@ ensure_debian_family() {
   local os_id="${ID:-}"
 
   if [[ "${os_id}" != "debian" && "${os_id}" != "ubuntu" && "${os_like}" != *"debian"* ]]; then
-    fail "This script only supports Debian/Ubuntu systems. Detected: ${PRETTY_NAME:-unknown}."
+    note "This script only supports Debian/Ubuntu systems. Detected: ${PRETTY_NAME:-unknown}."
     note "If you are using CentOS/RHEL, please run the CentOS/RHEL-specific initialization script instead:"
     note "curl -fsSL https://raw.githubusercontent.com/nakamurasama072/fast-server-mgmt-scripts/main/specific/fast-server-init-rhel.sh | sudo bash"
     fail "Initialization terminated with errors."
-    exit 1
   fi
 }
 
@@ -219,7 +214,7 @@ EOF
 
 # Main execution flow.
 main() {
-  require_root
+  check_root_permissions
   ensure_debian_family
   detect_package_manager
 

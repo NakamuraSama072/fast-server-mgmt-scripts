@@ -21,11 +21,9 @@ fail() {
 }
 
 # Require sudo/root execution.
-require_root() {
+check_root_permissions() {
   if [[ "${EUID}" -ne 0 ]]; then
-    fail "This script must be run with sudo (example: sudo bash fast-server-init-rhel.sh)."
-    fail "Initialization terminated with errors."
-    exit 1
+    fail "This script must be run with sudo (example: sudo bash fast-server-init-rhel.sh). Initialization terminated with errors."
   fi
 }
 
@@ -38,18 +36,14 @@ detect_package_manager() {
     log "'yum' detected instead. Note that 'yum' is older and may have different behavior compared to 'dnf'."
     PKG_MGR="yum"
   else
-    fail "Neither dnf nor yum was found on this system."
-    fail "Initialization terminated with errors."
-    exit 1
+    fail "Neither dnf nor yum was found on this system. Initialization terminated with errors."
   fi
 }
 
 # Validate OS family before running CentOS/RHEL-specific operations.
 ensure_rhel_family() {
   if [[ ! -f /etc/os-release ]]; then
-    fail "Cannot detect OS: /etc/os-release was not found."
-    fail "Initialization terminated with errors."
-    exit 1
+    fail "Cannot detect OS: /etc/os-release was not found. Initialization terminated with errors."
   fi
 
   # shellcheck disable=SC1091
@@ -58,11 +52,10 @@ ensure_rhel_family() {
   local os_id="${ID:-}"
 
   if [[ "${os_id}" != "rhel" && "${os_id}" != "centos" && "${os_id}" != "rocky" && "${os_id}" != "almalinux" && "${os_like}" != *"rhel"* && "${os_like}" != *"fedora"* ]]; then
-    fail "This script only supports CentOS/RHEL family systems. Detected: ${PRETTY_NAME:-unknown}."
+    note "This script only supports CentOS/RHEL family systems. Detected: ${PRETTY_NAME:-unknown}."
     note "If you are using Debian/Ubuntu, please run the Debian/Ubuntu-specific initialization script instead:"
     note "curl -fsSL https://raw.githubusercontent.com/nakamurasama072/fast-server-mgmt-scripts/main/specific/fast-server-init-debian.sh | sudo bash"
     fail "Initialization terminated with errors."
-    exit 1
   fi
 }
 
@@ -85,9 +78,7 @@ install_epel() {
   warn "Package 'epel-release' was not found in current repositories."
 
   if [[ ! -f /etc/os-release ]]; then
-    fail "Cannot detect OS version for EPEL fallback installation."
-    fail "Initialization terminated with errors."
-    exit 1
+    fail "Cannot detect OS version for EPEL fallback installation. Initialization terminated with errors."
   fi
 
   # shellcheck disable=SC1091
@@ -186,7 +177,7 @@ check_selinux() {
 
 # Main execution flow.
 main() {
-  require_root
+  check_root_permissions
   ensure_rhel_family
   detect_package_manager
 
