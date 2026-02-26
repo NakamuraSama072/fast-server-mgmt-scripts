@@ -23,7 +23,7 @@ fail() {
 # Require sudo/root execution.
 check_root_permissions() {
   if [[ "${EUID}" -ne 0 ]]; then
-    fail "This script must be run with sudo (example: sudo bash add-swap.sh)."
+    fail "This script must be run with sudo (example: sudo bash manage-swap.sh)."
   fi
 }
 
