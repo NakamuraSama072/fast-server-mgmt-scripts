@@ -103,19 +103,19 @@ cd fast-server-mgmt-scripts
 From the repository root:
 
 ```bash
-chmod +x specific/fast-server-init-debian.sh specific/fast-server-init-rhel.sh general/manage-swap.sh general/create-admin.sh
+chmod +x specific/init/fast-server-init-debian.sh specific/init/fast-server-init-rhel.sh general/manage-swap.sh general/create-admin.sh
 ```
 
 Run on Debian/Ubuntu:
 
 ```bash
-sudo ./specific/fast-server-init-debian.sh
+sudo ./specific/init/fast-server-init-debian.sh
 ```
 
 Run on CentOS/RHEL family:
 
 ```bash
-sudo ./specific/fast-server-init-rhel.sh
+sudo ./specific/init/fast-server-init-rhel.sh
 ```
 
 Run general scripts (on supported Linux distributions):
@@ -132,15 +132,15 @@ This requires `curl` or `wget`, either of which is already included in most dist
 Run on Debian/Ubuntu:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/nakamurasama072/fast-server-mgmt-scripts/main/specific/fast-server-init-debian.sh | sudo bash
-wget -qO- https://raw.githubusercontent.com/nakamurasama072/fast-server-mgmt-scripts/main/specific/fast-server-init-debian.sh | sudo bash
+curl -fsSL https://raw.githubusercontent.com/nakamurasama072/fast-server-mgmt-scripts/main/specific/init/fast-server-init-debian.sh | sudo bash
+wget -qO- https://raw.githubusercontent.com/nakamurasama072/fast-server-mgmt-scripts/main/specific/init/fast-server-init-debian.sh | sudo bash
 ```
 
 Run on CentOS/RHEL family:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/nakamurasama072/fast-server-mgmt-scripts/main/specific/fast-server-init-rhel.sh | sudo bash
-wget -qO- https://raw.githubusercontent.com/nakamurasama072/fast-server-mgmt-scripts/main/specific/fast-server-init-rhel.sh | sudo bash
+curl -fsSL https://raw.githubusercontent.com/nakamurasama072/fast-server-mgmt-scripts/main/specific/init/fast-server-init-rhel.sh | sudo bash
+wget -qO- https://raw.githubusercontent.com/nakamurasama072/fast-server-mgmt-scripts/main/specific/init/fast-server-init-rhel.sh | sudo bash
 ```
 
 Run general scripts:

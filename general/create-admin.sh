@@ -2,29 +2,35 @@
 
 set -euo pipefail
 
+# Basic info logger.
 log() {
 	echo "[INFO] $1"
 }
 
+# Informational note logger.
 note() {
 	echo "[NOTE] $1"
 }
 
+# Warning logger.
 warn() {
 	echo "[WARN] $1"
 }
 
+# Error logger and exit.
 fail() {
 	echo "[ERROR] $1" >&2
 	exit 1
 }
 
+# Ensure the script runs with root/sudo privileges.
 check_root_permissions() {
 	if [[ "${EUID}" -ne 0 ]]; then
 		fail "This script must be run with sudo/root privileges (example: sudo bash create-admin.sh)."
 	fi
 }
 
+# Detect admin group automatically (sudo on Debian-like, wheel on RHEL-like systems).
 get_admin_group() {
 	if getent group sudo >/dev/null 2>&1; then
 		echo "sudo"
@@ -39,6 +45,7 @@ get_admin_group() {
 	fail "No supported admin group found (expected 'sudo' or 'wheel')."
 }
 
+# Read and validate the admin username to create.
 ask_admin_username() {
 	local username
 
@@ -58,6 +65,7 @@ ask_admin_username() {
 	echo "${username}"
 }
 
+# Create user if missing, then set password.
 create_or_prepare_user() {
 	local username="$1"
 
@@ -78,6 +86,7 @@ create_or_prepare_user() {
 	passwd "${username}"
 }
 
+# Add user to the admin group.
 grant_admin_privilege() {
 	local username="$1"
 	local admin_group="$2"
@@ -86,6 +95,7 @@ grant_admin_privilege() {
 	usermod -aG "${admin_group}" "${username}"
 }
 
+# Disable root password-based SSH login (keep key-based login).
 configure_sshd_root_password_auth() {
 	local sshd_config="/etc/ssh/sshd_config"
 
@@ -117,6 +127,7 @@ configure_sshd_root_password_auth() {
 	warn "SSH service unit not found for reload. Please restart SSH service manually."
 }
 
+# Main flow: check privileges -> detect group/user -> create user -> grant admin -> harden SSH.
 main() {
 	local username admin_group
 
@@ -132,4 +143,5 @@ main() {
 	note "If you rely on root SSH access, make sure root public key authentication is configured before disconnecting."
 }
 
+# Program entry point.
 main "$@"

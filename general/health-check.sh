@@ -2,38 +2,48 @@
 
 set -euo pipefail
 
+# Absolute path of this script (used when installing cron jobs).
 SCRIPT_PATH="$(readlink -f "$0")"
+# Default report directory and daily cron schedule (06:15).
 DEFAULT_REPORT_DIR="/var/log/server-health"
 DEFAULT_CRON_SCHEDULE="15 6 * * *"
+# Common services to monitor.
 TARGET_SERVICES=(ssh sshd cron crond firewalld ufw)
 
+# Basic info logger.
 log() {
 	echo "[INFO] $1"
 }
 
+# Warning logger (stderr).
 warn() {
 	echo "[WARN] $1" >&2
 }
 
+# Error logger (stderr) and exit.
 fail() {
 	echo "[ERROR] $1" >&2
 	exit 1
 }
 
+# Unified root privilege check for privileged actions.
 require_root() {
 	if [[ "${EUID}" -ne 0 ]]; then
 		fail "This action requires sudo/root privileges."
 	fi
 }
 
+# Check whether a command is available.
 check_cmd() {
 	command -v "$1" >/dev/null 2>&1
 }
 
+# Standardized timestamp format for auditing.
 human_timestamp() {
 	date '+%Y-%m-%d %H:%M:%S %z'
 }
 
+# Capture a single CPU usage snapshot (fallback to N/A if top is unavailable).
 collect_cpu_snapshot() {
 	if check_cmd top; then
 		top -bn1 | awk -F'[, ]+' '/^%Cpu\(s\)|^Cpu\(s\)/ {print "user=" $2 "% system=" $4 "% idle=" $8 "%"; found=1} END {if (!found) print "N/A"}'
@@ -42,6 +52,7 @@ collect_cpu_snapshot() {
 	echo "N/A"
 }
 
+# Show top memory-consuming processes.
 collect_top_memory_processes() {
 	if check_cmd ps; then
 		ps -eo pid,comm,%cpu,%mem --sort=-%mem | head -n 6
@@ -50,6 +61,7 @@ collect_top_memory_processes() {
 	echo "ps command not available"
 }
 
+# Count pending package updates based on available package manager.
 collect_updates_status() {
     if check_cmd apt; then
         local count
@@ -82,6 +94,7 @@ collect_updates_status() {
 	echo "pending_updates=unknown (no supported package manager found)"
 }
 
+# Collect status for target services that exist on this host.
 collect_service_status() {
 	if ! check_cmd systemctl; then
 		echo "systemctl not available"
@@ -101,6 +114,7 @@ collect_service_status() {
 	fi
 }
 
+# Report count and details of failed systemd services.
 collect_failed_services() {
 	if check_cmd systemctl; then
 		local failed
@@ -114,6 +128,7 @@ collect_failed_services() {
 	echo "failed_services=unknown (systemctl not available)"
 }
 
+# Generate full health report and write it to today's log file.
 generate_report() {
 	local report_dir="$1"
 	mkdir -p "${report_dir}"
@@ -183,6 +198,7 @@ generate_report() {
 	log "Health report written to: ${report_file}"
 }
 
+# Install a cron job for the current user to run daily checks.
 install_cron_job() {
 	local schedule="$1"
 	local report_dir="$2"
@@ -216,6 +232,7 @@ install_cron_job() {
 	log "Cron job installed: ${cron_line}"
 }
 
+# Command-line help.
 usage() {
 	cat <<'EOF'
 Usage:
@@ -230,6 +247,7 @@ Examples:
 EOF
 }
 
+# Argument parsing and action dispatcher.
 main() {
 	local action=""
 	local schedule="${DEFAULT_CRON_SCHEDULE}"
@@ -279,4 +297,5 @@ main() {
 	esac
 }
 
+# Program entry point.
 main "$@"
