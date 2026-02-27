@@ -7,12 +7,13 @@ Lightweight server management scripts for common Linux initialization tasks with
 This repository currently provides:
 
 - Two distribution-specific server initialization scripts
-- Two distribution-agnostic general management scripts
+- Three distribution-agnostic general management scripts
 
 - Debian/Ubuntu script: [specific/fast-server-init-debian.sh](specific/fast-server-init-debian.sh)
 - CentOS/RHEL script: [specific/fast-server-init-rhel.sh](specific/fast-server-init-rhel.sh)
 - Swap management script: [general/manage-swap.sh](general/manage-swap.sh)
 - Admin account bootstrap script: [general/create-admin.sh](general/create-admin.sh)
+- Common service management script: [general/service-mgmt.sh](general/service-mgmt.sh)
 
 > [!TIP]
 > Arch Linux and Arch-based distribution support is planned and will be released in a future update.
@@ -73,6 +74,10 @@ Distribution-specific behavior:
 	- Sets user password and grants admin group access (`sudo`/`wheel`)
 	- Hardens SSH by setting `PermitRootLogin prohibit-password`
 	- Validates SSH config and reloads SSH service
+- `general/service-mgmt.sh`
+	- Provides a common service control entrypoint for LAMP, LNMP and `java`
+	- Supports `start`, `stop`, `restart`, and `status`
+	- Handles service-name differences across distributions (for example `apache2`/`httpd`, `mysql`/`mariadb`)
 
 ## Requirements
 
@@ -103,7 +108,7 @@ cd fast-server-mgmt-scripts
 From the repository root:
 
 ```bash
-chmod +x specific/init/fast-server-init-debian.sh specific/init/fast-server-init-rhel.sh general/manage-swap.sh general/create-admin.sh
+chmod +x specific/init/fast-server-init-debian.sh specific/init/fast-server-init-rhel.sh general/manage-swap.sh general/create-admin.sh general/service-mgmt.sh
 ```
 
 Run on Debian/Ubuntu:
@@ -123,6 +128,7 @@ Run general scripts (on supported Linux distributions):
 ```bash
 sudo ./general/manage-swap.sh
 sudo ./general/create-admin.sh
+sudo ./general/service-mgmt.sh restart lamp
 ```
 
 ### Option B: One-liner clean execution (no local clone)
@@ -151,12 +157,15 @@ wget -qO- https://raw.githubusercontent.com/nakamurasama072/fast-server-mgmt-scr
 
 curl -fsSL https://raw.githubusercontent.com/nakamurasama072/fast-server-mgmt-scripts/main/general/create-admin.sh | sudo bash
 wget -qO- https://raw.githubusercontent.com/nakamurasama072/fast-server-mgmt-scripts/main/general/create-admin.sh | sudo bash
+
+curl -fsSL https://raw.githubusercontent.com/nakamurasama072/fast-server-mgmt-scripts/main/general/service-mgmt.sh | sudo bash -s -- restart lamp
+wget -qO- https://raw.githubusercontent.com/nakamurasama072/fast-server-mgmt-scripts/main/general/service-mgmt.sh | sudo bash -s -- status java
 ```
 
 ## Notes
 
 - Run each script only on its matching distribution family.
-- `general/manage-swap.sh` and `general/create-admin.sh` also require sudo/root privileges.
+- `general/manage-swap.sh`, `general/create-admin.sh`, and `general/service-mgmt.sh` require sudo/root for privileged operations.
 - On Debian/Ubuntu, a reboot may be required after SELinux activation changes.
 - These scripts intentionally do not modify software mirror/repository source lists.
 
